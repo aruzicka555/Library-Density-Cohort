@@ -10,9 +10,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 //using Landis.Library.Climate;
+using Landis.Library.InitialCommunities.Universal;
 using Landis.Library.UniversalCohorts;
 using Landis.Cohorts.TypeIndependent;
 using Landis.Library.Succession.DensitySeeding;
+using System.Dynamic;
 
 namespace Landis.Library.DensityCohorts
 {
@@ -181,7 +183,7 @@ namespace Landis.Library.DensityCohorts
                 CohortBinSize = Timestep;*/
         }
 
-        public SiteCohorts(DateTime StartDate, ActiveSite site, Landis.Library.DensityCohorts.InitialCommunities.ICommunity initialCommunity, bool usingClimateLibrary, string SiteOutputName = null)
+        public SiteCohorts(DateTime StartDate, ActiveSite site, ICommunity initialCommunity, bool usingClimateLibrary, string SiteOutputName = null)
         {
             //Cohort.SetSiteAccessFunctions(this);
             this.Ecoregion = EcoregionData.ModelCore.Ecoregion[site];
@@ -223,8 +225,7 @@ namespace Landis.Library.DensityCohorts
                 {
                     foreach (Landis.Library.UniversalCohorts.ICohort cohort in speciesCohorts)
                     {
-                        //FIXME
-                        if (((Landis.Library.DensityCohorts.ICohort)cohort).Treenumber > 0)  // 0 Biomass indicates treenumber value was not read in
+                        if (cohort.Data.AdditionalParameters.TreeNumber > 0)  // 0 Biomass indicates treenumber value was not read in
                         {
                             densityProvided = true;
                             break;
@@ -234,13 +235,13 @@ namespace Landis.Library.DensityCohorts
 
                 if (densityProvided)
                 {
-                    foreach (Landis.Library.DensityCohorts.ISpeciesCohorts speciesCohorts in initialCommunity.Cohorts)
+                    foreach (Landis.Library.UniversalCohorts.ISpeciesCohorts speciesCohorts in initialCommunity.Cohorts)
                     {
                         //foreach (Landis.Library.DensityCohorts.ICohort cohort in speciesCohorts)
                         int cohortIndex = 0;
-                        foreach (Landis.Library.DensityCohorts.ICohort cohort in speciesCohorts)
+                        foreach (Landis.Library.UniversalCohorts.ICohort cohort in speciesCohorts)
                         {
-                            AddNewCohort(new Cohort(cohort.Species, cohort.Age, cohort.Treenumber, SiteOutputName, (ushort)(StartDate.Year - cohort.Age), Ecoregion));
+                            AddNewCohort(new Cohort(cohort.Species, cohort.Data.Age, cohort.Data.AdditionalParameters.TreeNumber, SiteOutputName, (ushort)(StartDate.Year - cohort.Data.Age), Ecoregion));
                             //AddNewCohort(new Cohort(SpeciesParameters.SpeciesDensity[cohort.Species], cohort.Age, cohort.Treenumber, SiteOutputName, (ushort)(StartDate.Year - cohort.Age), Ecoregion));
                             //ISpeciesDensity speciespnet = PlugIn.SpeciesDensity[cohort.Species];
 
@@ -250,9 +251,9 @@ namespace Landis.Library.DensityCohorts
                             //coData.Biomass = cohort.Biomass;
                             cohortIndex++;
                         }
-                        // BRM - Add function to update biomass values ??
-                        SpeciesCohorts spCo = (SpeciesCohorts)speciesCohorts;
-                        spCo.UpdateDiameterAndBiomass(Ecoregion);
+
+                        // call to update values
+                        GetSpeciesCohort(cohorts[speciesCohorts.First().Species]);
                     }
 
                 }
@@ -497,7 +498,7 @@ namespace Landis.Library.DensityCohorts
             foreach (List<Cohort> species_cohort in cohorts.Values)
             {
                 //Landis.Library.DensityCohorts.SpeciesCohorts species_cohorts = GetSpeciesCohort(cohorts[species_cohort[0].Species]);
-                foreach (Landis.Library.DensityCohorts.ICohort cohort in (IEnumerable<Landis.Library.DensityCohorts.ICohort>)species_cohort)
+                foreach (Landis.Library.DensityCohorts.ICohort cohort in species_cohort)
                 //for (int c =0;c< species_cohort.Count(); c++)
                 {
                     //FIXME - JSF
@@ -858,6 +859,35 @@ namespace Landis.Library.DensityCohorts
 
         }
 
+        public Landis.Library.Parameters.Species.AuxParm<int> TreeNumberPerSpecies
+        {
+            get
+            {
+                Landis.Library.Parameters.Species.AuxParm<int> TreeNumberPerSpecies = new Library.Parameters.Species.AuxParm<int>(EcoregionData.ModelCore.Species);
+
+                foreach (ISpecies spc in cohorts.Keys)
+                {
+                    TreeNumberPerSpecies[spc] = cohorts[spc].Sum(o => (int)(o.Treenumber));
+                }
+                return TreeNumberPerSpecies;
+            }
+        }
+
+        public Landis.Library.Parameters.Species.AuxParm<double> BasalPerSpecies
+        {
+            get
+            {
+                double local_const = 3.1415926 / (4 * 10000.00);
+                Landis.Library.Parameters.Species.AuxParm<double> BasalPerSpecies = new Library.Parameters.Species.AuxParm<double>(EcoregionData.ModelCore.Species);
+
+                foreach (ISpecies spc in cohorts.Keys)
+                {
+                    BasalPerSpecies[spc] = cohorts[spc].Sum(o => Math.Pow(o.Diameter, 2) *
+                        local_const * o.Treenumber);
+                }
+                return BasalPerSpecies;
+            }
+        }
 
     }
 

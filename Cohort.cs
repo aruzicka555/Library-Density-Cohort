@@ -5,6 +5,7 @@ using Landis.SpatialModeling;
 using Landis.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 
 
 namespace Landis.Library.DensityCohorts
@@ -156,6 +157,10 @@ namespace Landis.Library.DensityCohorts
             get {
                 return data;
             }
+            set
+            {
+                data = value;
+            }
         }
 
 
@@ -275,6 +280,8 @@ namespace Landis.Library.DensityCohorts
             this.data.Treenumber = cohort.Treenumber;
             this.diameter = cohort.Diameter;
             this.data.Biomass = cohort.Biomass;
+            this.Data = cohort.Data;
+            this.AdditionalParameters = cohort.AdditionalParameters;
         }
 
         //---------------------------------------------------------------------
