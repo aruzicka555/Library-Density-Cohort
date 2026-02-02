@@ -31,6 +31,7 @@ namespace Landis.Library.DensityCohorts
             EcoregionData.ModelCore.RegisterSiteVar(fineFuels, "Succession.FineFuels");
             sitecohorts = EcoregionData.ModelCore.Landscape.NewSiteVar<SiteCohorts>();
             UniversalCohorts = EcoregionData.ModelCore.Landscape.NewSiteVar<Landis.Library.UniversalCohorts.SiteCohorts>();
+            summaryLogMortality = new MetadataTable<SummaryLogMortality>("Metadata/Density Output/SummaryLogMortality.csv");
         }
 
         public static void SpeciesSiteRD(Landis.Library.DensityCohorts.SpeciesCohorts speciesCohorts, ActiveSite site)
